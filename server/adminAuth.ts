@@ -10,10 +10,11 @@ export function getAdminSession() {
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
-    createTableIfMissing: false,
+    createTableIfMissing: true, // يمكن تركه true لتوليد الجدول تلقائياً
     ttl: sessionTtl,
     tableName: "sessions",
   });
+
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
@@ -21,12 +22,13 @@ export function getAdminSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production", // HTTPS فقط
       maxAge: sessionTtl,
-      sameSite: "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "lax" : "lax",
     },
   });
 }
+
 
 export const isAdminAuthenticated: RequestHandler = (req, res, next) => {
   const session = (req as any).session;
